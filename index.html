@@ -106,7 +106,7 @@ const P=[
   look:{skin:"#e8b896",hair:"#9a9a9a",hs:"short",top:"#3d5a80",kind:"jacket",beard:1},
   vote:"the party that came first, but it was excluded from government",
   r1:"Low education, low trust and clearly right-wing views: all three strong clues point up.",
-  r2:"His party came first but did not join the government. Feeling cheated may push his belief up further."},
+  r2:"His party came first but was excluded from government. Feeling cheated may push his belief up further."},
  {id:2,n:"Aylin",age:34,g:"woman",ed:"High school diploma",mig:"Yes, parents from Turkey",job:"Nurse",tr:1,int:1,lr:.5,
   look:{skin:"#f1c9a5",hair:"#2b1d16",hs:"long",top:"#5fb3a8",kind:"scrubs"},
   vote:"did not vote",
@@ -257,7 +257,7 @@ function groupView(){
       const fin=document.getElementById('fin');if(fin)fin.onclick=()=>reveal(1);
     }
     if(G.step===3){
-      bar.innerHTML=`<b>Step 3 of 3: the election</b><span class="hint"><b>New: whom each person voted for.</b> The line starts from the research ranking. Who moves up, who moves down?</span>`;
+      bar.innerHTML=`<b>Step 3 of 3: the election</b><span class="hint"><b>New: whom each person voted for.</b> The line starts from the research ranking. Who moves up, who moves down? Keep everything else you know about each person in mind: an election moves people only a little.</span>`;
       act.hidden=false;act.innerHTML='<button class="primary" id="fin">We are done: show what research says</button>';
       document.getElementById('fin').onclick=()=>reveal(2);
     }
