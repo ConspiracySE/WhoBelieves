@@ -104,9 +104,9 @@ button.primary{background:var(--coral);border-color:var(--coral);color:#fff;font
 const P=[
  {id:1,n:"John",age:58,g:"man",ed:"Compulsory school",mig:"No",job:"Warehouse worker",tr:1,int:2,lr:.92,
   look:{skin:"#e8b896",hair:"#9a9a9a",hs:"short",top:"#3d5a80",kind:"jacket",beard:1},
-  vote:"the party that came first, but the others kept it out of government",
+  vote:"the party that came first, but it did not join the government",
   r1:"Low education, low trust and clearly right-wing views: all three strong clues point up.",
-  r2:"Excluded winner: his party won the most votes but was kept out of power. Feeling cheated may push belief up further (an open question; think of Austria 2024)."},
+  r2:"His party came first but did not join the government. Feeling cheated may push his belief up further."},
  {id:2,n:"Aylin",age:34,g:"woman",ed:"High school diploma",mig:"Yes, parents from Turkey",job:"Nurse",tr:1,int:1,lr:.5,
   look:{skin:"#f1c9a5",hair:"#2b1d16",hs:"long",top:"#5fb3a8",kind:"scrubs"},
   vote:"did not vote",
@@ -272,9 +272,9 @@ function groupView(){
     const r=toSlots(round===1?R1:R2),mine=round===1?G.slots:G.s3;
     document.getElementById('HT').hidden=true;
     bar.className='stepbar';
-    bar.innerHTML=`<b>What research suggests${round===2?' after the election':''}</b><span class="hint">Shaded: you placed this person at least two places away from the research.</span><button id="back">Back to our line</button>`;
+    bar.innerHTML=`<b>What research suggests${round===2?' after the election':''}</b><span class="hint">Shaded: you placed this person at least two places away from the research.</span>${round===1?'<button id="back">Back to our line</button>':''}`;
     document.getElementById('B').innerHTML=`<div class="cmp">${head()}${cmpRow('Your group',mine,r)}${cmpRow('Research',r)}</div>${round===1?why(R1,'r1'):why(R2,'r2',R1)}`;
-    document.getElementById('back').onclick=()=>{act.hidden=true;mountB()};
+    if(round===1)document.getElementById('back').onclick=()=>{act.hidden=true;mountB()};
     if(round===1)lock(3,UNLOCK3,()=>{G.s3=toSlots(R1);G.prev3=toSlots(R1);G.step=3;mountB()});
     else{act.hidden=true;act.innerHTML=''}
     window.scrollTo({top:0,behavior:'smooth'});
