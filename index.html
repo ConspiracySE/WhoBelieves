@@ -62,6 +62,17 @@ button:focus-visible,.tok:focus-visible,.pcard:focus-visible{outline:3px solid v
 .rk{font-weight:800;color:var(--mut);padding-top:16px}
 .mv{font-weight:800;margin-left:6px}.up{color:var(--coral)}.down{color:var(--teal)}
 .note{color:var(--mut);font-size:13px;margin-top:18px}
+.stepbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:10px}
+.stepbar b{font-size:17px}
+button.primary{background:var(--coral);border-color:var(--coral);color:#fff;font-weight:800}
+.new{background:light-dark(#fff4e6,#3a2c18);border-radius:8px;padding:2px 6px}
+.bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.band{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
+.band h3{margin:0 0 6px;font-size:17px}.band.hi{border-top:6px solid var(--coral)}.band.mid{border-top:6px solid #e9c46a}.band.lo{border-top:6px solid var(--teal)}
+.bp{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.finds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.find{background:var(--soft);border-radius:12px;padding:10px 12px;font-size:15px}.find b{display:block;font-size:16px}
+@media(max-width:800px){.bands,.finds{grid-template-columns:minmax(0,1fr)}}
 @media(min-width:900px){.why{grid-template-columns:1fr 1fr}.pool .pcard .details{display:grid}.pool .info{display:none}}
 @media(max-width:700px){
  .track{grid-template-columns:minmax(0,1fr);padding:26px 0 26px 30px}
@@ -167,13 +178,13 @@ function board(el,slots,opt={}){
   function unplace(id){const i=where(id);if(i>=0)slots[i]=null;sel=null;draw()}
   function draw(){
     el.innerHTML=`<div class="track"><span class="end lo">Lowest belief</span><span class="end hi">Highest belief</span>
-      ${slots.map((id,i)=>`<div class="slot${id?' full':''}" data-slot="${i}" style="--i:${i}"><span class="num">${i+1}</span>${id?`<div class="tok${sel===id?' sel':''}" data-id="${id}" tabindex="0">${avatar(byId[id],opt.big?64:52)}<span>${byId[id].n}</span><button class="x" data-out="${id}" aria-label="Back to the pool">×</button></div>`:''}</div>`).join('')}</div>
+      ${slots.map((id,i)=>`<div class="slot${id?' full':''}" data-slot="${i}" style="--i:${i}"><span class="num">${i+1}</span>${id?`<div class="tok${sel===id?' sel':''}" data-id="${id}" tabindex="0">${avatar(byId[id],opt.big?64:52)}<span>${byId[id].n}${opt.prev&&opt.prev.indexOf(id)>=0&&opt.prev.indexOf(id)!==i?` <b class="mv ${opt.prev.indexOf(id)<i?'up':'down'}">${opt.prev.indexOf(id)<i?'▲':'▼'}${Math.abs(opt.prev.indexOf(id)-i)}</b>`:''}</span><button class="x" data-out="${id}" aria-label="Back to the pool">×</button></div>`:''}</div>`).join('')}</div>
       <div class="pool" data-pool="1"><h2>${opt.poolTitle||'The seven people'}</h2>${P.map(p=>{const w=where(p.id);return `
-       <div class="pcard${w>=0&&!opt.vote?' placed':''}${sel===p.id?' sel':''}${opt.open?' open':''}" data-id="${p.id}" tabindex="0">
+       <div class="pcard${w>=0&&opt.basic?' placed':''}${sel===p.id?' sel':''}${opt.open?' open':''}" data-id="${p.id}" tabindex="0">
         ${avatar(p,56)}<div><h3>${p.n}, ${p.age}</h3><div class="sub">${p.g} · ${p.job}</div></div>
         <div style="display:flex;flex-direction:column;align-items:end;gap:4px">${w>=0?`<span class="badge">place ${w+1}</span>`:''}<button class="info" data-info="${p.id}">Profile</button></div>
         <div class="details"><div><div class="k">Education</div>${p.ed}</div><div><div class="k">Migration background</div>${p.mig}</div>
-         <div><div class="k">Trust in politics</div>${dots(p.tr)}</div><div><div class="k">Political views</div>${pos(p.lr)}</div></div>
+         ${opt.basic?'':`<div class="new"><div class="k">Trust in politics</div>${dots(p.tr)}</div><div class="new"><div class="k">Political views</div>${pos(p.lr)}</div>`}</div>
         ${opt.vote?voteBox(p):''}</div>`}).join('')}</div>`;
     opt.onChange&&opt.onChange();
   }
@@ -210,18 +221,33 @@ function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt
 // ---------- group view ----------
 function groupView(){
   document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
-  const slots=Array(7).fill(null);
-  app.innerHTML=`<div class="row"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span><button id="rs">Start again</button></div>
-    <div class="row" style="margin-top:8px"><button id="hb" aria-expanded="false">Need a hint?</button><span id="hint" class="hint" hidden><b>Strong clues:</b> trust in politics, political views and education. <b>Weaker clues:</b> age, gender and migration background.</span></div>
-    <div id="B"></div><div id="ok"></div>
+  const G={step:1,slots:Array(7).fill(null),prev:null};
+  app.innerHTML=`<div class="row"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span></div>
+    <div class="stepbar" id="SB"></div><div id="B"></div>
     <p class="note">Fictional characters. <a href="#teacher">Projector view (for the teacher)</a></p>`;
-  const b=mount(document.getElementById('B'),slots,{onChange(){const ok=document.getElementById('ok');if(ok)ok.innerHTML=slots.every(Boolean)?'<div class="done">Done! Be ready to tell the class where you put each person, and why.</div>':''}});
-  document.getElementById('rs').onclick=()=>b.reset();
-  document.getElementById('hb').onclick=e=>{const h=document.getElementById('hint');h.hidden=!h.hidden;e.target.setAttribute('aria-expanded',!h.hidden);e.target.textContent=h.hidden?'Need a hint?':'Hide the hint'};
+  const bar=document.getElementById('SB');
+  function render(){
+    const full=G.slots.every(Boolean);
+    bar.innerHTML=G.step===1
+      ?`<b>Step 1 of 2</b><span class="hint">What you know: age, gender, job, education and migration background.</span>${full?'<button class="primary" id="nx">Step 2: show more information</button>':''}`
+      :`<b>Step 2 of 2</b><span class="hint">New: trust in politics and political views. Move people if you want; arrows show changes since step 1.</span>${full?'<span class="done" style="margin:0">Done! Be ready to compare your line with research.</span>':''}`;
+    const nx=document.getElementById('nx');if(nx)nx.onclick=()=>{G.prev=[...G.slots];G.step=2;mountB()};
+  }
+  function mountB(){mount(document.getElementById('B'),G.slots,{basic:G.step===1,prev:G.step===2?G.prev:null,onChange:render});render()}
+  mountB();
 }
 
 // ---------- teacher view ----------
-const T={tab:'r1',pl:null};
+const T={tab:'demo',pl:null};
+const BANDS=[
+ ['hi','Likely higher',[[3,'young, compulsory school'],[1,'compulsory school'],[2,'migration background, high school diploma']]],
+ ['mid','Unclear',[[4,'apprenticeship, middle-aged man'],[6,'apprenticeship, but older']]],
+ ['lo','Likely lower',[[7,'university degree; migration background points the other way'],[5,'studies at university; young age points the other way']]]];
+const FINDS=[
+ ['Education','The most consistent finding: lower education goes with more belief. It partly reflects feeling powerless and believing in simple solutions.'],
+ ['Age','Most studies find more belief among younger people, some among older people. Young people often feel alienated from politics.'],
+ ['Gender','Some studies find more belief among men, others among women, many no difference. It depends on the country and the theory.'],
+ ['Migration background','Often more belief among minorities, linked to experiences of discrimination and marginalisation, and partly to theories about their own group.']];
 function line(slots){return `<div class="cmp">${head()}<div class="lab"></div>${slots.map(id=>`<div class="cell">${avatar(byId[id],56)}<span>${byId[id].n}</span></div>`).join('')}</div>`}
 const head=()=>`<div></div>${[1,2,3,4,5,6,7].map(i=>`<div class="hd">${i}${i===1?' · lowest':i===7?' · highest':''}</div>`).join('')}`;
 function why(order,key,prev){return `<div class="why">${order.map((id,i)=>{const p=byId[id];let mv='';
@@ -229,12 +255,15 @@ function why(order,key,prev){return `<div class="why">${order.map((id,i)=>{const
   return `<div class="wcard"><div class="rk">${7-i}</div>${avatar(p,56)}<div><h3>${p.n}${mv}</h3>${key==='r2'?voteBox(p):''}<p>${p[key]}</p></div></div>`}).join('')}</div>`}
 function teacherView(){
   document.getElementById('lede').textContent='What does research suggest?';
-  const tabs=[['r1','1 · What research suggests'],['flash','2 · News flash'],['r2','3 · After the election']];
+  const tabs=[['demo','1 · Step 1: who they are'],['r1','2 · Step 2: what research suggests'],['flash','3 · News flash'],['r2','4 · After the election']];
   app.innerHTML=`<div class="tabs">${tabs.map(([k,l])=>`<button data-tab="${k}" aria-pressed="${T.tab===k}">${l}</button>`).join('')}</div><div id="V"></div>
    <p class="note">Fictional characters. Research rankings describe averages across many people, not predictions about individuals. <a href="#group">Back to the group view</a></p>`;
   app.querySelector('.tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b){T.tab=b.dataset.tab;teacherView()}};
   const V=document.getElementById('V');
   if(current){current.off();current=null}
+  if(T.tab==='demo'){V.innerHTML=`<div class="bands">${BANDS.map(([c,t,ps])=>`<div class="band ${c}"><h3>${t}</h3>${ps.map(([id,r])=>`<div class="bp">${avatar(byId[id],44)}<div><b>${byId[id].n}</b><br>${r}</div></div>`).join('')}</div>`).join('')}</div>
+     <div class="finds">${FINDS.map(([h,t])=>`<div class="find"><b>${h}</b>${t}</div>`).join('')}</div>
+     <p class="hint" style="margin-top:12px">Why studies disagree: which conspiracy theory is asked, in which country, and what else is taken into account.</p>`}
   if(T.tab==='r1'){V.innerHTML=`${line(toSlots(R1))}${why(R1,'r1')}`}
   if(T.tab==='flash'){if(!T.pl)T.pl=toSlots(R1);
     V.innerHTML=`<div class="flash">News flash: the election results are in.</div><div id="B"></div>`;
