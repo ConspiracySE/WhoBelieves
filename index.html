@@ -220,29 +220,46 @@ let current=null;
 function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt);return current}
 
 // ---------- group view ----------
+const UNLOCK='TRUST';
 function groupView(){
   document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
-  const G={step:1,slots:Array(7).fill(null),prev:null};
+  const G={step:1,slots:Array(7).fill(null),prev:null,tip:false,locked:true};
   app.innerHTML=`<div class="row" id="HT"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span></div>
-    <div class="stepbar" id="SB"></div><div id="B"></div>
+    <div class="stepbar" id="SB"></div><div id="B"></div><div class="stepbar" id="ACT" hidden></div>
     <p class="note">Fictional characters. Research rankings describe averages across many people, not predictions about individuals. <a href="#teacher">Projector view (for the teacher)</a></p>`;
-  const bar=document.getElementById('SB');
+  const bar=document.getElementById('SB'),act=document.getElementById('ACT');
   function render(){
     const full=G.slots.every(Boolean);
-    if(G.step===1)bar.innerHTML=`<b>Step 1 of 2</b><span class="hint">What you know: age, gender, job, education and migration background.</span>${full?'<button class="primary" id="nx">Step 2: show more information</button>':''}`;
-    if(G.step===2)bar.innerHTML=`<b>Step 2 of 2</b><span class="hint">New: trust in politics and political views. Move people if you want; arrows show changes since step 1.</span><button id="tipb" aria-expanded="${G.tip?'true':'false'}">${G.tip?'Hide the tip':'Need a tip?'}</button>${full?'<button class="primary" id="fin">We are done: show what research says</button>':''}${G.tip?'<span class="hint" style="flex-basis:100%"><b>Tip:</b> start with the two cases where all clues point in the same direction (low vs. high conspiracy belief). Then compare people with similar trust in politics, and look at how their political views and education differ.</span>':''}`;
-    const nx=document.getElementById('nx');if(nx)nx.onclick=()=>{G.prev=[...G.slots];G.step=2;mountB()};
-    const fin=document.getElementById('fin');if(fin)fin.onclick=reveal;
-    const tb=document.getElementById('tipb');if(tb)tb.onclick=()=>{G.tip=!G.tip;render()};
+    if(G.step===1){
+      bar.innerHTML=`<b>Step 1 of 2</b><span class="hint">What you know: age, gender, job, education and migration background.</span>`;
+      act.hidden=!full;
+      if(full&&!act.querySelector('#code'))act.innerHTML=`<b>Step 2 is locked.</b><span class="hint">Enter the code from the projector to see more information.</span>
+        <input id="code" aria-label="Code for step 2" autocomplete="off" style="width:140px;text-transform:uppercase"><button class="primary" id="nx">Open step 2</button><span id="cm" class="hint"></span>`;
+      const nx=document.getElementById('nx');
+      if(nx){const go=()=>{const v=document.getElementById('code').value.trim().toUpperCase();
+        if(v===UNLOCK){G.prev=[...G.slots];G.step=2;act.innerHTML='';mountB();window.scrollTo({top:0,behavior:'smooth'})}
+        else document.getElementById('cm').textContent='That is not the code.'};
+        nx.onclick=go;document.getElementById('code').onkeydown=e=>{if(e.key==='Enter')go()}}
+    }
+    if(G.step===2){
+      bar.innerHTML=`<b>Step 2 of 2</b><span class="hint">New: trust in politics and political views. Move people if you want; arrows show changes since step 1.</span>
+        <button id="tipb" aria-expanded="${G.tip?'true':'false'}">${G.tip?'Hide the tip':'Need a tip?'}</button>
+        ${G.tip?'<span class="hint" style="flex-basis:100%"><b>Tip:</b> start with the two cases where all clues point in the same direction (low vs. high conspiracy belief). Then compare people with similar trust in politics, and look at how their political views and education differ.</span>':''}`;
+      document.getElementById('tipb').onclick=()=>{G.tip=!G.tip;render()};
+      act.hidden=!full;
+      act.innerHTML=full?'<button class="primary" id="fin">We are done: show what research says</button>':'';
+      const fin=document.getElementById('fin');if(fin)fin.onclick=reveal;
+    }
   }
   function mountB(){mount(document.getElementById('B'),G.slots,{basic:G.step===1,prev:G.step===2?G.prev:null,onChange:render});render()}
   function reveal(){
     if(current){current.off();current=null}
     const r=toSlots(R1);
-    document.getElementById('HT').hidden=true;
-    bar.innerHTML=`<b>What research suggests</b><span class="hint">Shaded: you placed this person at least two places away from the research. Do you agree with the reasons?</span><button id="back">Back to our line</button>`;
+    document.getElementById('HT').hidden=true;act.hidden=true;
+    bar.innerHTML=`<b>What research suggests</b><span class="hint">Shaded: you placed this person at least two places away from the research.</span><button id="back">Back to our line</button>`;
     document.getElementById('B').innerHTML=`<div class="cmp">${head()}${cmpRow('Your group',G.slots,r)}${cmpRow('Research',r)}</div>${why(R1,'r1')}`;
-    document.getElementById('back').onclick=()=>{G.step=2;document.getElementById('HT').hidden=false;mountB()};
+    document.getElementById('back').onclick=()=>{document.getElementById('HT').hidden=false;mountB()};
+    window.scrollTo({top:0,behavior:'smooth'});
   }
   mountB();
 }
@@ -261,7 +278,7 @@ const FINDS=[
 function cmpRow(label,slots,ref){return `<div class="lab">${label}</div>${slots.map((id,i)=>`<div class="cell${ref&&id&&Math.abs(ref.indexOf(id)-i)>=2?' off':''}">${id?avatar(byId[id],40)+'<span>'+byId[id].n+'</span>':'–'}</div>`).join('')}`}
 function line(slots){return `<div class="cmp">${head()}<div class="lab"></div>${slots.map(id=>`<div class="cell">${avatar(byId[id],56)}<span>${byId[id].n}</span></div>`).join('')}</div>`}
 const head=()=>`<div></div>${[1,2,3,4,5,6,7].map(i=>`<div class="hd">${i}${i===1?' · lowest':i===7?' · highest':''}</div>`).join('')}`;
-function why(order,key,prev){return `<div class="why">${order.map((id,i)=>{const p=byId[id];let mv='';
+function why(order,key,prev){return `<div class="why">${order.map((id,i)=>[id,i]).reverse().map(([id,i])=>{const p=byId[id];let mv='';
   if(prev){const d=prev.indexOf(id)-i;mv=`<span class="mv ${d>0?'up':d<0?'down':''}">${d>0?'▲ up':d<0?'▼ down':'='}</span>`}
   return `<div class="wcard"><div class="rk">${7-i}</div>${avatar(p,56)}<div><h3>${p.n}${mv}</h3>${key==='r2'?voteBox(p):''}<p>${p[key]}</p></div></div>`}).join('')}</div>`}
 function teacherView(){
@@ -274,7 +291,8 @@ function teacherView(){
   if(current){current.off();current=null}
   if(T.tab==='demo'){V.innerHTML=`<div class="bands">${BANDS.map(([c,t,ps])=>`<div class="band ${c}"><h3>${t}</h3>${ps.map(([id,r])=>`<div class="bp">${avatar(byId[id],44)}<div><b>${byId[id].n}</b><br>${r}</div></div>`).join('')}</div>`).join('')}</div>
      <div class="finds">${FINDS.map(([h,t])=>`<div class="find"><b>${h}</b>${t}</div>`).join('')}</div>
-     <p class="hint" style="margin-top:12px">Why studies disagree: which conspiracy theory is asked, in which country, and what else is taken into account.</p>`}
+     <p class="hint" style="margin-top:12px">Why studies disagree: which conspiracy theory is asked, in which country, and what else is taken into account.</p>
+     <div class="flash" style="background:var(--navy);margin-top:14px">Code for step 2: ${UNLOCK}</div>`}
   if(T.tab==='r1'){V.innerHTML=`${line(toSlots(R1))}${why(R1,'r1')}`}
   if(T.tab==='flash'){if(!T.pl)T.pl=toSlots(R1);
     V.innerHTML=`<div class="flash">News flash: the election results are in.</div><div id="B"></div>`;
