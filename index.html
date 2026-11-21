@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who Believes? Ranking Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: friendly classroom game, calm and clear, readable from the back row
+   IDEA: a line of seven empty places, lowest to highest belief, filled from a pool of neighbours
+   PICTURE: illustrated characters dropped onto numbered places along a coloured line
+   COLOUR and TYPE: seminar navy #0B2E4F, teal to coral scale, Figtree
+   LAYOUT: phone = vertical line above the pool; laptop and projector = horizontal line above the pool */
+:root{color-scheme:light dark;--bg:light-dark(#f4f7fa,#0a1a2c);--card:light-dark(#fff,#12263d);--ink:light-dark(#0b2e4f,#e8f0f7);--mut:light-dark(#5b6f82,#9fb3c6);--line:light-dark(#d6e0ea,#25405c);--navy:#0b2e4f;--teal:#2a9d8f;--coral:#e76f51;--soft:light-dark(#e6f2f1,#173a43)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif;overflow-x:clip}
+header{background:var(--navy);color:#fff;padding:16px max(4vw,16px)}
+header h1{margin:0;font-size:clamp(24px,3.6vw,38px);line-height:1.05;font-weight:800}
+header p{margin:6px 0 0;color:#cfe0ee;max-width:75ch}
+main{padding:16px max(4vw,16px) 40px;max-width:1300px;margin:0 auto}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-height:44px;padding:8px 14px}
+button:focus-visible,.tok:focus-visible,.pcard:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hint{color:var(--mut);font-size:15px}
+.track{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:34px 0 8px;margin:6px 0 14px}
+.track::before{content:"";position:absolute;left:4%;right:4%;top:84px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--teal),#e9c46a,var(--coral))}
+.end{position:absolute;top:2px;font-size:13px;font-weight:800}.end.lo{left:0;color:var(--teal)}.end.hi{right:0;color:var(--coral)}
+.slot{position:relative;min-height:112px;border:2px dashed var(--line);border-radius:14px;background:light-dark(rgba(255,255,255,.75),rgba(18,38,61,.85));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 2px;cursor:pointer}
+.slot .num{position:absolute;top:4px;left:8px;font-weight:800;color:var(--mut);font-size:14px}
+.slot.full{border-style:solid;border-color:var(--teal);background:var(--card)}
+.slot.hover{border-color:var(--coral);background:var(--soft)}
+.tok{display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800;font-size:14px;touch-action:manipulation;user-select:none;cursor:grab;border-radius:10px;padding:2px 4px;position:relative}
+.tok.sel,.pcard.sel{outline:3px solid var(--coral);outline-offset:2px}
+.tok .x{position:absolute;top:-8px;right:-10px;min-height:0;width:24px;height:24px;padding:0;border-radius:50%;font-size:13px;line-height:1}
+.pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;padding:12px;border-radius:16px;background:var(--soft);min-height:90px}
+.pool h2{grid-column:1/-1;margin:0;font-size:16px}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:4px 10px;align-items:center;touch-action:manipulation;user-select:none;cursor:grab}
+.pcard.placed{opacity:.45}
+.pcard h3{margin:0;font-size:17px}.pcard .sub{color:var(--mut);font-size:14px}
+.badge{font-size:12px;font-weight:800;color:#fff;background:var(--teal);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.info{min-height:32px;padding:0 10px;font-size:13px}
+.details{grid-column:1/-1;display:none;gap:6px 12px;grid-template-columns:repeat(2,minmax(0,1fr));font-size:14px;padding-top:4px}
+.pcard.open .details{display:grid}
+.k{color:var(--mut);font-size:12px}
+.dots{letter-spacing:2px;color:var(--teal);font-weight:800}
+.pos{position:relative;height:8px;border-radius:4px;background:var(--line);margin:6px 0 2px}.pos i{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--navy);border:2px solid #fff;margin-left:-8px}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.vote{grid-column:1/-1;background:var(--soft);border-radius:10px;padding:6px 10px;font-size:14px}
+.ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-50%) scale(1.08);filter:drop-shadow(0 8px 14px rgba(11,46,79,.35))}
+.done{background:var(--teal);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;margin-top:12px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.tabs button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.flash{background:var(--coral);color:#fff;border-radius:14px;padding:12px 16px;font-weight:800;font-size:20px;margin:4px 0 8px}
+.cmp{display:grid;grid-template-columns:110px repeat(7,minmax(0,1fr));gap:6px;align-items:center;margin:10px 0}
+.cmp .lab{font-weight:800}.cmp .cell{display:flex;flex-direction:column;align-items:center;font-size:13px;font-weight:700;border-radius:10px;padding:4px 0}
+.cmp .cell.off{background:light-dark(#fde8e2,#4a2a22)}
+.cmp .hd{text-align:center;font-weight:800;color:var(--mut);font-size:13px}
+.why{display:grid;gap:10px;margin-top:12px}
+.wcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;grid-template-columns:auto 56px minmax(0,1fr);gap:10px;align-items:start}
+.wcard h3{margin:0;font-size:17px}.wcard p{margin:4px 0 0;font-size:15px}
+.rk{font-weight:800;color:var(--mut);padding-top:16px}
+.mv{font-weight:800;margin-left:6px}.up{color:var(--coral)}.down{color:var(--teal)}
+.note{color:var(--mut);font-size:13px;margin-top:18px}
+@media(min-width:900px){.why{grid-template-columns:1fr 1fr}.pool .pcard .details{display:grid}.pool .info{display:none}}
+@media(max-width:700px){
+ .track{grid-template-columns:minmax(0,1fr);padding:26px 0 26px 30px}
+ .track::before{left:10px;right:auto;top:26px;bottom:26px;width:8px;height:auto;background:linear-gradient(var(--coral),#e9c46a,var(--teal))}
+ .end.hi{top:0;left:0;right:auto}.end.lo{top:auto;bottom:0}
+ .track .slot{order:calc(7 - var(--i))}
+ .slot{min-height:66px;flex-direction:row;justify-content:flex-start;padding-left:40px}
+ .slot .num{top:50%;transform:translateY(-50%);left:12px}
+ .tok{flex-direction:row;gap:8px}
+ .cmp{grid-template-columns:70px repeat(7,minmax(0,1fr))}.cmp .cell span{display:none}
+}
+@media(prefers-reduced-motion:reduce){.ghost{transform:translate(-50%,-50%)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Who believes in conspiracy theories?</h1>
+  <p id="lede">Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).</p>
+</header>
+<main id="app"></main>
+<script>
+{
+const P=[
+ {id:1,n:"John",age:58,g:"man",ed:"Apprenticeship",mig:"No",job:"Warehouse worker",tr:1,int:2,lr:.5,
+  look:{skin:"#e8b896",hair:"#9a9a9a",hs:"short",top:"#3d5a80",kind:"jacket",beard:1},
+  vote:"the party that came first, but the others kept it out of government",
+  r1:"Lower education and low trust both go with higher belief on average. He places himself in the centre, as many believers do. Later today: what a single left–right scale can hide.",
+  r2:"Excluded winner: his party won the most votes but was kept out of power. Feeling cheated may push belief up further (an open question; think of Austria 2024)."},
+ {id:2,n:"Aylin",age:34,g:"woman",ed:"High school diploma",mig:"Yes, parents from Turkey",job:"Nurse",tr:1,int:1,lr:.38,
+  look:{skin:"#f1c9a5",hair:"#2b1d16",hs:"long",top:"#5fb3a8",kind:"scrubs"},
+  vote:"a party that is now in opposition",
+  r1:"Several studies find more conspiracy belief among people with a migration background and members of low-status groups, though it varies by country and topic. Low trust adds to it.",
+  r2:"She lost, but she is not interested in politics. Mainly engaged losers become more conspiratorial, so little changes."},
+ {id:3,n:"Alex",age:26,g:"man",ed:"Compulsory school",mig:"No",job:"Delivery driver",tr:1,int:1,lr:.5,
+  look:{skin:"#c68c66",hair:"#6b4a2b",hs:"cap",top:"#d1495b",kind:"hoodie"},
+  vote:"a small party that failed to enter parliament",
+  r1:"Young, lower education and low trust are all linked to higher belief on average. Like many believers, he places himself in the centre.",
+  r2:"He lost, but with low interest in politics the loss does not matter much to him."},
+ {id:4,n:"Markus",age:42,g:"man",ed:"University degree",mig:"No",job:"Owns a small company",tr:3,int:3,lr:.85,
+  look:{skin:"#f3d2b8",hair:"#c49a5a",hs:"short",top:"#33415c",kind:"blazer"},
+  vote:"a party that is now in government",
+  r1:"The surprise. High trust and education usually go with lower belief, but people on the right often score above average. So he lands in the middle, not at the bottom.",
+  r2:"His side is in government. Winners tend to become slightly less conspiratorial."},
+ {id:5,n:"Lena",age:24,g:"woman",ed:"University student",mig:"No",job:"University student",tr:2,int:4,lr:.15,party:1,
+  look:{skin:"#f6d5c0",hair:"#b5542d",hs:"bun",top:"#8ab17d",kind:"sweater",glasses:1},
+  vote:"a party that is now in opposition",
+  r1:"Young age points up, but higher education and placing herself on the left point down: people on the left often score below average.",
+  r2:"A loser who identifies strongly with her party and is very interested in politics: exactly the kind of loser whose conspiracy mentality rises after an election."},
+ {id:6,n:"Maria",age:71,g:"woman",ed:"Compulsory school",mig:"No",job:"Retired cleaner",tr:2,int:2,lr:.52,
+  look:{skin:"#e2a982",hair:"#e6e6e6",hs:"bob",top:"#b56576",kind:"cardigan",glasses:1},
+  vote:"a party that is now in government",
+  r1:"Older people believe less on average. Lower education pushes the other way, so she sits in the middle to low range.",
+  r2:"Her side won, so if anything she moves slightly down."},
+ {id:7,n:"Ivan",age:47,g:"man",ed:"University degree",mig:"Yes, parents from Croatia",job:"Lawyer",tr:2,int:3,lr:.65,
+  look:{skin:"#d9a07a",hair:"#3b2f2a",hs:"short",top:"#22313f",kind:"suit"},
+  vote:"a party that is now in government",
+  r1:"University education, an upper-middle-class job and moderate trust all go with lower belief. His migration background alone would point up, but the other factors outweigh it.",
+  r2:"His side won. He stays at the bottom."}
+];
+// research orders, highest belief first; places run from 1 (lowest) to 7 (highest)
+const R1=[1,3,2,4,6,5,7], R2=[1,3,2,5,4,6,7];
+const toSlots=o=>[...o].reverse();
+const byId=Object.fromEntries(P.map(p=>[p.id,p]));
+const LV=["","low","medium","high","very high"];
+const app=document.getElementById('app');
+let uid=0;
+
+function avatar(p,size){
+  const L=p.look,s=L.skin,h=L.hair,u='a'+(uid++);
+  const hair={short:`<path d="M30 40c0-14 9-22 20-22s20 8 20 22c-4-7-10-10-20-10s-16 3-20 10z" fill="${h}"/>`,
+    long:`<path d="M27 46c0-17 10-27 23-27s23 10 23 27v22c-5 4-9 4-12 2V44c-5-4-17-4-22 0v26c-3 2-7 2-12-2z" fill="${h}"/>`,
+    bun:`<circle cx="50" cy="15" r="7" fill="${h}"/><path d="M30 42c0-14 9-22 20-22s20 8 20 22c-6-9-14-11-20-11s-14 2-20 11z" fill="${h}"/>`,
+    bob:`<path d="M28 50c0-18 10-29 22-29s22 11 22 29c-3 2-5 2-7 0 0-12-6-17-15-17s-15 5-15 17c-2 2-4 2-7 0z" fill="${h}"/>`,
+    cap:`<path d="M30 38c0-12 9-19 20-19s20 7 20 19z" fill="#264653"/><rect x="48" y="35" width="28" height="5" rx="2.5" fill="#264653"/>`}[L.hs];
+  const tops={jacket:`<path d="M50 74l-8 26h16z" fill="#e9ecef"/>`,scrubs:`<path d="M42 72l8 12 8-12" fill="none" stroke="#fff" stroke-width="2.5"/>`,
+    hoodie:`<path d="M38 70c4 8 20 8 24 0" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="3"/>`,
+    blazer:`<path d="M44 72l6 28 6-28" fill="#f8f9fa"/><path d="M44 72l-6 28M56 72l6 28" stroke="rgba(0,0,0,.25)" stroke-width="2"/>`,
+    sweater:`<path d="M40 73c6 5 14 5 20 0" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="3"/>`,
+    cardigan:`<path d="M46 73v27M54 73v27" stroke="rgba(255,255,255,.55)" stroke-width="2"/><circle cx="50" cy="84" r="1.6" fill="#fff"/><circle cx="50" cy="92" r="1.6" fill="#fff"/>`,
+    suit:`<path d="M45 72l5 28 5-28" fill="#f8f9fa"/><path d="M50 74l-2 4 2 14 2-14z" fill="#c1121f"/>`}[L.kind];
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">
+   <defs><clipPath id="${u}"><circle cx="50" cy="50" r="49"/></clipPath></defs>
+   <circle cx="50" cy="50" r="49" fill="var(--soft)"/><g clip-path="url(#${u})">
+    <path d="M18 100c0-20 14-31 32-31s32 11 32 31z" fill="${L.top}"/>${tops}
+    <rect x="44" y="58" width="12" height="13" rx="5" fill="${s}"/><ellipse cx="50" cy="44" rx="17" ry="19" fill="${s}"/>
+    ${L.beard?`<path d="M34 46c2 14 8 19 16 19s14-5 16-19c-4 6-10 7-16 7s-12-1-16-7z" fill="${h}" opacity=".85"/>`:''}${hair}
+    <circle cx="43" cy="45" r="2" fill="#1d2b36"/><circle cx="57" cy="45" r="2" fill="#1d2b36"/>
+    <path d="M44 54q6 5 12 0" fill="none" stroke="#1d2b36" stroke-width="2" stroke-linecap="round"/>
+    ${L.glasses?`<g fill="none" stroke="#1d2b36" stroke-width="1.6"><circle cx="43" cy="45" r="5.5"/><circle cx="57" cy="45" r="5.5"/><path d="M48.5 45h3"/></g>`:''}
+   </g></svg>`;
+}
+const dots=v=>`<span class="dots">${'●'.repeat(v)}${'○'.repeat(4-v)}</span> ${LV[v]}`;
+const pos=v=>`<div class="pos"><i style="left:${v*100}%"></i></div><div class="ends"><span>left</span><span>right</span></div>`;
+const voteBox=p=>`<div class="vote"><b>Voted for:</b> ${p.vote}<br><b>Interest in politics:</b> ${dots(p.int)}${p.party?', committed party supporter':''}</div>`;
+
+// ---------- the board: seven places plus a pool ----------
+function board(el,slots,opt={}){
+  let sel=null;
+  const where=id=>slots.indexOf(id);
+  function place(id,i){const from=where(id),occ=slots[i];
+    if(from>=0)slots[from]=occ;   // swap if both were placed; an occupant pushed out of the pool spot goes back to the pool
+    slots[i]=id;sel=null;draw()}
+  function unplace(id){const i=where(id);if(i>=0)slots[i]=null;sel=null;draw()}
+  function draw(){
+    el.innerHTML=`<div class="track"><span class="end lo">Lowest belief</span><span class="end hi">Highest belief</span>
+      ${slots.map((id,i)=>`<div class="slot${id?' full':''}" data-slot="${i}" style="--i:${i}"><span class="num">${i+1}</span>${id?`<div class="tok${sel===id?' sel':''}" data-id="${id}" tabindex="0">${avatar(byId[id],opt.big?64:52)}<span>${byId[id].n}</span><button class="x" data-out="${id}" aria-label="Back to the pool">×</button></div>`:''}</div>`).join('')}</div>
+      <div class="pool" data-pool="1"><h2>${opt.poolTitle||'The seven people'}</h2>${P.map(p=>{const w=where(p.id);return `
+       <div class="pcard${w>=0?' placed':''}${sel===p.id?' sel':''}${opt.open?' open':''}" data-id="${p.id}" tabindex="0">
+        ${avatar(p,56)}<div><h3>${p.n}, ${p.age}</h3><div class="sub">${p.g} · ${p.job}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:end;gap:4px">${w>=0?`<span class="badge">place ${w+1}</span>`:''}<button class="info" data-info="${p.id}">Profile</button></div>
+        <div class="details"><div><div class="k">Education</div>${p.ed}</div><div><div class="k">Migration background</div>${p.mig}</div>
+         <div><div class="k">Trust in politics</div>${dots(p.tr)}</div><div><div class="k">Political views</div>${pos(p.lr)}</div></div>
+        ${opt.vote?voteBox(p):''}</div>`}).join('')}</div>`;
+    opt.onChange&&opt.onChange();
+  }
+  let justDragged=false;
+  el.addEventListener('click',e=>{
+    if(justDragged){justDragged=false;return}
+    const out=e.target.closest('[data-out]');if(out){unplace(+out.dataset.out);return}
+    const inf=e.target.closest('[data-info]');if(inf){inf.closest('.pcard').classList.toggle('open');return}
+    const item=e.target.closest('.tok,.pcard'),slot=e.target.closest('[data-slot]');
+    if(slot&&sel&&(!item||+item.dataset.id!==sel)){place(sel,+slot.dataset.slot);return}
+    if(item){const id=+item.dataset.id;sel=sel===id?null:id;draw()}
+  });
+  el.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.tok,.pcard,.slot')){e.preventDefault();e.target.click()}});
+  let d=null;
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;const item=e.target.closest('.tok,.pcard');if(!item||e.target.closest('button'))return;
+    d={id:+item.dataset.id,x:e.clientX,y:e.clientY,ghost:null}});
+  const move=e=>{if(!d)return;
+    if(!d.ghost){if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<8)return;
+      d.ghost=document.createElement('div');d.ghost.className='ghost';d.ghost.innerHTML=avatar(byId[d.id],64);document.body.appendChild(d.ghost)}
+    e.preventDefault();d.ghost.style.left=e.clientX+'px';d.ghost.style.top=e.clientY+'px';
+    el.querySelectorAll('.slot.hover').forEach(s=>s.classList.remove('hover'));
+    const t=document.elementFromPoint(e.clientX,e.clientY);const s=t&&t.closest('[data-slot]');if(s&&el.contains(s))s.classList.add('hover')};
+  const up=e=>{if(!d)return;const dd=d;d=null;if(!dd.ghost)return;
+    dd.ghost.remove();justDragged=true;setTimeout(()=>{justDragged=false},50);
+    const t=document.elementFromPoint(e.clientX,e.clientY);const s=t&&t.closest('[data-slot]'),pool=t&&t.closest('[data-pool]');
+    if(s&&el.contains(s))place(dd.id,+s.dataset.slot);else if(pool&&el.contains(pool))unplace(dd.id);else draw()};
+  window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',()=>{if(d&&d.ghost)d.ghost.remove();d=null;draw()});
+  draw();
+  return {reset(){slots.fill(null);sel=null;draw()},off(){window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}};
+}
+let current=null;
+function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt);return current}
+
+// ---------- group view ----------
+function groupView(){
+  document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
+  const slots=Array(7).fill(null);
+  app.innerHTML=`<div class="row"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span><button id="rs">Start again</button></div>
+    <div id="B"></div><div id="ok"></div>
+    <p class="note">Fictional characters. <a href="#teacher">Projector view (for the teacher)</a></p>`;
+  const b=mount(document.getElementById('B'),slots,{onChange(){const ok=document.getElementById('ok');if(ok)ok.innerHTML=slots.every(Boolean)?'<div class="done">Done! Be ready to tell the class where you put each person, and why.</div>':''}});
+  document.getElementById('rs').onclick=()=>b.reset();
+}
+
+// ---------- teacher view ----------
+const T={tab:'class',cls:Array(7).fill(null),pl:null};
+function cmpRow(label,slots,ref){return `<div class="lab">${label}</div>${slots.map((id,i)=>`<div class="cell${ref&&id&&Math.abs(ref.indexOf(id)-i)>=2?' off':''}">${id?avatar(byId[id],40)+'<span>'+byId[id].n+'</span>':'–'}</div>`).join('')}`}
+const head=()=>`<div></div>${[1,2,3,4,5,6,7].map(i=>`<div class="hd">${i}${i===1?' · low':i===7?' · high':''}</div>`).join('')}`;
+function why(order,key,prev){return `<div class="why">${order.map((id,i)=>{const p=byId[id];let mv='';
+  if(prev){const d=prev.indexOf(id)-i;mv=`<span class="mv ${d>0?'up':d<0?'down':''}">${d>0?'▲ up':d<0?'▼ down':'='}</span>`}
+  return `<div class="wcard"><div class="rk">${7-i}</div>${avatar(p,56)}<div><h3>${p.n}${mv}</h3>${key==='r2'?voteBox(p):''}<p>${p[key]}</p></div></div>`}).join('')}</div>`}
+function teacherView(){
+  document.getElementById('lede').textContent='Projector view: place the people as the class decides, then compare with what research suggests.';
+  const tabs=[['class','1 · Class ranking'],['r1','2 · Reveal: research'],['flash','3 · News flash'],['r2','4 · Reveal: after the election']];
+  app.innerHTML=`<div class="tabs">${tabs.map(([k,l])=>`<button data-tab="${k}" aria-pressed="${T.tab===k}">${l}</button>`).join('')}</div><div id="V"></div>
+   <p class="note">Fictional characters. Research rankings describe averages across many people, not predictions about individuals. <a href="#group">Back to the group view</a></p>`;
+  app.querySelector('.tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b){T.tab=b.dataset.tab;teacherView()}};
+  const V=document.getElementById('V');
+  if(current){current.off();current=null}
+  if(T.tab==='class'){V.innerHTML=`<div class="row"><span class="hint">Ask the groups where they put each person, discuss, and place them as the class decides.</span><button id="rs">Clear</button></div><div id="B"></div>`;
+    const b=mount(document.getElementById('B'),T.cls,{big:1});document.getElementById('rs').onclick=()=>b.reset()}
+  if(T.tab==='r1'){const r=toSlots(R1);
+    V.innerHTML=`<div class="cmp">${head()}${cmpRow('Class',T.cls,r)}${cmpRow('Research',r)}</div>
+     <p class="hint">Shaded: the class placed this person at least two places away from the research.</p>${why(R1,'r1')}`}
+  if(T.tab==='flash'){if(!T.pl)T.pl=toSlots(R1);
+    V.innerHTML=`<div class="flash">News flash: the election results are in. Who voted for whom, and who cares about politics?</div>
+     <div class="row"><span class="hint">Discuss in plenum: who moves up, who moves down? Move the people as the class decides.</span><button id="rs">Back to the research order</button></div><div id="B"></div>`;
+    mount(document.getElementById('B'),T.pl,{big:1,vote:1,open:1,poolTitle:'The seven people, after the election'});
+    document.getElementById('rs').onclick=()=>{T.pl=toSlots(R1);teacherView()}}
+  if(T.tab==='r2'){const r=toSlots(R2);if(!T.pl)T.pl=toSlots(R1);
+    V.innerHTML=`<div class="cmp">${head()}${cmpRow('Class',T.pl,r)}${cmpRow('Before',toSlots(R1))}${cmpRow('After',r)}</div>${why(R2,'r2',R1)}`}
+}
+function route(){if(current){current.off();current=null}location.hash==='#teacher'?teacherView():groupView()}
+window.addEventListener('hashchange',route);route();
+}
+</script>
+</body>
+</html>
