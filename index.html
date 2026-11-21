@@ -212,7 +212,7 @@ function groupView(){
   document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
   const slots=Array(7).fill(null);
   app.innerHTML=`<div class="row"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span><button id="rs">Start again</button></div>
-    <div class="row" style="margin-top:8px"><button id="hb" aria-expanded="false">Need a hint?</button><span id="hint" class="hint" hidden><b>Strong clues:</b> education, trust in politics, political views. <b>Weaker clues:</b> age and gender.</span></div>
+    <div class="row" style="margin-top:8px"><button id="hb" aria-expanded="false">Need a hint?</button><span id="hint" class="hint" hidden><b>Strong clues:</b> trust in politics, political views and education. <b>Weaker clues:</b> age, gender and migration background.</span></div>
     <div id="B"></div><div id="ok"></div>
     <p class="note">Fictional characters. <a href="#teacher">Projector view (for the teacher)</a></p>`;
   const b=mount(document.getElementById('B'),slots,{onChange(){const ok=document.getElementById('ok');if(ok)ok.innerHTML=slots.every(Boolean)?'<div class="done">Done! Be ready to tell the class where you put each person, and why.</div>':''}});
