@@ -66,7 +66,12 @@ button:focus-visible,.tok:focus-visible,.pcard:focus-visible{outline:3px solid v
 .stepbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:10px}
 .stepbar b{font-size:17px}
 button.primary{background:var(--coral);border-color:var(--coral);color:#fff;font-weight:800}
-.new{background:light-dark(#fff4e6,#3a2c18);border-radius:8px;padding:2px 6px}
+.new{background:light-dark(#fde8e2,#4a2a22);border:2px solid var(--coral);border-radius:10px;padding:4px 8px;position:relative}
+.new::after{content:"new";position:absolute;top:-9px;right:6px;background:var(--coral);color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:0 6px;line-height:16px}
+.stepbar.s2,.stepbar.s3{border:2px solid var(--coral);background:light-dark(#fff7f4,#2a1c18)}
+.pcard.fresh{border-color:var(--coral)}
+.vote.newv{background:light-dark(#fde8e2,#4a2a22);border:2px solid var(--coral);position:relative}
+.vote.newv::after{content:"new";position:absolute;top:-9px;right:8px;background:var(--coral);color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:0 6px;line-height:16px}
 .bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
 .band{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
 .band h3{margin:0 0 6px;font-size:17px}.band.hi{border-top:6px solid var(--coral)}.band.mid{border-top:6px solid #e9c46a}.band.lo{border-top:6px solid var(--teal)}
@@ -167,7 +172,7 @@ function avatar(p,size){
 }
 const dots=v=>`<span class="dots">${'●'.repeat(v)}${'○'.repeat(4-v)}</span> ${LV[v]}`;
 const pos=v=>`<div class="pos"><i style="left:${v*100}%"></i></div><div class="ends"><span>left</span><span>right</span></div>`;
-const voteBox=p=>`<div class="vote"><b>Voted for:</b> ${p.vote}<br><b>Interest in politics:</b> ${dots(p.int)}${p.party?', committed party supporter':''}</div>`;
+const voteBox=(p,nw)=>`<div class="vote${nw?' newv':''}"><b>Voted for:</b> ${p.vote}<br><b>Interest in politics:</b> ${dots(p.int)}${p.party?', committed party supporter':''}</div>`;
 
 // ---------- the board: seven places plus a pool ----------
 function board(el,slots,opt={}){
@@ -181,12 +186,12 @@ function board(el,slots,opt={}){
     el.innerHTML=`<div class="track"><span class="end lo">Lowest belief</span><span class="end hi">Highest belief</span>
       ${slots.map((id,i)=>`<div class="slot${id?' full':''}" data-slot="${i}" style="--i:${i}"><span class="num">${i+1}</span>${id?`<div class="tok${sel===id?' sel':''}" data-id="${id}" tabindex="0">${avatar(byId[id],opt.big?64:52)}<span>${byId[id].n}${opt.prev&&opt.prev.indexOf(id)>=0&&opt.prev.indexOf(id)!==i?` <b class="mv ${opt.prev.indexOf(id)<i?'up':'down'}">${opt.prev.indexOf(id)<i?'▲':'▼'}${Math.abs(opt.prev.indexOf(id)-i)}</b>`:''}</span><button class="x" data-out="${id}" aria-label="Back to the pool">×</button></div>`:''}</div>`).join('')}</div>
       <div class="pool" data-pool="1"><h2>${opt.poolTitle||'The seven people'}</h2>${P.map(p=>{const w=where(p.id);return `
-       <div class="pcard${w>=0&&opt.basic?' placed':''}${sel===p.id?' sel':''}${opt.open?' open':''}" data-id="${p.id}" tabindex="0">
+       <div class="pcard${w>=0&&opt.basic?' placed':''}${opt.fresh?' fresh':''}${sel===p.id?' sel':''}${opt.open?' open':''}" data-id="${p.id}" tabindex="0">
         ${avatar(p,56)}<div><h3>${p.n}, ${p.age}</h3><div class="sub">${p.g} · ${p.job}</div></div>
         <div style="display:flex;flex-direction:column;align-items:end;gap:4px">${w>=0?`<span class="badge">place ${w+1}</span>`:''}<button class="info" data-info="${p.id}">Profile</button></div>
         <div class="details"><div><div class="k">Education</div>${p.ed}</div><div><div class="k">Migration background</div>${p.mig}</div>
-         ${opt.basic?'':`<div class="new"><div class="k">Trust in politics</div>${dots(p.tr)}</div><div class="new"><div class="k">Political views</div>${pos(p.lr)}</div>`}</div>
-        ${opt.vote?voteBox(p):''}</div>`}).join('')}</div>`;
+         ${opt.basic?'':`<div class="${opt.vote?'':'new'}"><div class="k">Trust in politics</div>${dots(p.tr)}</div><div class="${opt.vote?'':'new'}"><div class="k">Political views</div>${pos(p.lr)}</div>`}</div>
+        ${opt.vote?voteBox(p,opt.fresh):''}</div>`}).join('')}</div>`;
     opt.onChange&&opt.onChange();
   }
   let justDragged=false;
@@ -220,45 +225,58 @@ let current=null;
 function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt);return current}
 
 // ---------- group view ----------
-const UNLOCK='ILOVESCIENCE';
+const UNLOCK='ILOVESCIENCE', UNLOCK3='ELECTION';
 function groupView(){
   document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
-  const G={step:1,slots:Array(7).fill(null),prev:null,tip:false,locked:true};
+  const G={step:1,slots:Array(7).fill(null),prev:null,tip:false,s3:null,prev3:null};
   app.innerHTML=`<div class="row" id="HT"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span></div>
     <div class="stepbar" id="SB"></div><div id="B"></div><div class="stepbar" id="ACT" hidden></div>
     <p class="note">Fictional characters. Research rankings describe averages across many people, not predictions about individuals. <a href="#teacher">Projector view (for the teacher)</a></p>`;
   const bar=document.getElementById('SB'),act=document.getElementById('ACT');
+  function lock(n,code,onOpen){
+    act.hidden=false;
+    act.innerHTML=`<b>Step ${n} is locked.</b><span class="hint">Enter the code from the projector to continue.</span>
+      <input id="code" aria-label="Code for step ${n}" autocomplete="off" style="width:170px;text-transform:uppercase"><button class="primary" id="nx">Open step ${n}</button><span id="cm" class="hint"></span>`;
+    const go=()=>{const v=document.getElementById('code').value.trim().toUpperCase();
+      if(v===code){act.innerHTML='';onOpen();window.scrollTo({top:0,behavior:'smooth'})}else document.getElementById('cm').textContent='That is not the code.'};
+    document.getElementById('nx').onclick=go;document.getElementById('code').onkeydown=e=>{if(e.key==='Enter')go()};
+  }
   function render(){
-    const full=G.slots.every(Boolean);
+    const full=(G.step===3?G.s3:G.slots).every(Boolean);
+    bar.className='stepbar s'+G.step;
     if(G.step===1){
-      bar.innerHTML=`<b>Step 1 of 2</b><span class="hint">What you know: age, gender, job, education and migration background.</span>`;
-      act.hidden=!full;
-      if(full&&!act.querySelector('#code'))act.innerHTML=`<b>Step 2 is locked.</b><span class="hint">Enter the code from the projector to see more information.</span>
-        <input id="code" aria-label="Code for step 2" autocomplete="off" style="width:140px;text-transform:uppercase"><button class="primary" id="nx">Open step 2</button><span id="cm" class="hint"></span>`;
-      const nx=document.getElementById('nx');
-      if(nx){const go=()=>{const v=document.getElementById('code').value.trim().toUpperCase();
-        if(v===UNLOCK){G.prev=[...G.slots];G.step=2;act.innerHTML='';mountB();window.scrollTo({top:0,behavior:'smooth'})}
-        else document.getElementById('cm').textContent='That is not the code.'};
-        nx.onclick=go;document.getElementById('code').onkeydown=e=>{if(e.key==='Enter')go()}}
+      bar.innerHTML=`<b>Step 1 of 3</b><span class="hint">What you know: age, gender, job, education and migration background.</span>`;
+      if(full){if(!act.querySelector('#code'))lock(2,UNLOCK,()=>{G.prev=[...G.slots];G.step=2;mountB()})}else{act.hidden=true;act.innerHTML=''}
     }
     if(G.step===2){
-      bar.innerHTML=`<b>Step 2 of 2</b><span class="hint">New: trust in politics and political views. Move people if you want; arrows show changes since step 1.</span>
+      bar.innerHTML=`<b>Step 2 of 3</b><span class="hint"><b>New: trust in politics and political views</b> (marked in red on every card). Move people if you want; arrows show changes since step 1.</span>
         <button id="tipb" aria-expanded="${G.tip?'true':'false'}">${G.tip?'Hide the tip':'Need a tip?'}</button>
         ${G.tip?'<span class="hint" style="flex-basis:100%"><b>Tip:</b> start with the two cases where all clues point in the same direction (low vs. high conspiracy belief). Then compare people with similar trust in politics, and look at how their political views and education differ.</span>':''}`;
       document.getElementById('tipb').onclick=()=>{G.tip=!G.tip;render()};
-      act.hidden=!full;
-      act.innerHTML=full?'<button class="primary" id="fin">We are done: show what research says</button>':'';
-      const fin=document.getElementById('fin');if(fin)fin.onclick=reveal;
+      act.hidden=!full;act.innerHTML=full?'<button class="primary" id="fin">We are done: show what research says</button>':'';
+      const fin=document.getElementById('fin');if(fin)fin.onclick=()=>reveal(1);
+    }
+    if(G.step===3){
+      bar.innerHTML=`<b>Step 3 of 3: the election</b><span class="hint"><b>New: whom each person voted for and how interested they are in politics.</b> The line starts from the research ranking. Who moves up, who moves down?</span>`;
+      act.hidden=false;act.innerHTML='<button class="primary" id="fin">We are done: show what research says</button>';
+      document.getElementById('fin').onclick=()=>reveal(2);
     }
   }
-  function mountB(){mount(document.getElementById('B'),G.slots,{basic:G.step===1,prev:G.step===2?G.prev:null,onChange:render});render()}
-  function reveal(){
+  function mountB(){
+    document.getElementById('HT').hidden=false;
+    if(G.step===3)mount(document.getElementById('B'),G.s3,{vote:1,fresh:1,prev:G.prev3,onChange:render});
+    else mount(document.getElementById('B'),G.slots,{basic:G.step===1,fresh:G.step===2,prev:G.step===2?G.prev:null,onChange:render});
+    render()}
+  function reveal(round){
     if(current){current.off();current=null}
-    const r=toSlots(R1);
-    document.getElementById('HT').hidden=true;act.hidden=true;
-    bar.innerHTML=`<b>What research suggests</b><span class="hint">Shaded: you placed this person at least two places away from the research.</span><button id="back">Back to our line</button>`;
-    document.getElementById('B').innerHTML=`<div class="cmp">${head()}${cmpRow('Your group',G.slots,r)}${cmpRow('Research',r)}</div>${why(R1,'r1')}`;
-    document.getElementById('back').onclick=()=>{document.getElementById('HT').hidden=false;mountB()};
+    const r=toSlots(round===1?R1:R2),mine=round===1?G.slots:G.s3;
+    document.getElementById('HT').hidden=true;
+    bar.className='stepbar';
+    bar.innerHTML=`<b>What research suggests${round===2?' after the election':''}</b><span class="hint">Shaded: you placed this person at least two places away from the research.</span><button id="back">Back to our line</button>`;
+    document.getElementById('B').innerHTML=`<div class="cmp">${head()}${cmpRow('Your group',mine,r)}${cmpRow('Research',r)}</div>${round===1?why(R1,'r1'):why(R2,'r2',R1)}`;
+    document.getElementById('back').onclick=()=>{act.hidden=true;mountB()};
+    if(round===1)lock(3,UNLOCK3,()=>{G.s3=toSlots(R1);G.prev3=toSlots(R1);G.step=3;mountB()});
+    else{act.hidden=true;act.innerHTML=''}
     window.scrollTo({top:0,behavior:'smooth'});
   }
   mountB();
@@ -293,7 +311,7 @@ function teacherView(){
      <div class="finds">${FINDS.map(([h,t])=>`<div class="find"><b>${h}</b>${t}</div>`).join('')}</div>
      <p class="hint" style="margin-top:12px">Why studies disagree: which conspiracy theory is asked, in which country, and what else is taken into account.</p>
      <div class="flash" style="background:var(--navy);margin-top:14px">Code for step 2: ${UNLOCK}</div>`}
-  if(T.tab==='r1'){V.innerHTML=`${line(toSlots(R1))}${why(R1,'r1')}`}
+  if(T.tab==='r1'){V.innerHTML=`${line(toSlots(R1))}${why(R1,'r1')}<div class="flash" style="background:var(--navy);margin-top:14px">Code for step 3: ${UNLOCK3}</div>`}
   if(T.tab==='flash'){if(!T.pl)T.pl=toSlots(R1);
     V.innerHTML=`<div class="flash">News flash: the election results are in.</div><div id="B"></div>`;
     mount(document.getElementById('B'),T.pl,{big:1,vote:1,open:1,poolTitle:'Who voted for whom, and who cares about politics?'})}
