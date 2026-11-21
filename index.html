@@ -15,6 +15,7 @@
 :root{color-scheme:light dark;--bg:light-dark(#f4f7fa,#0a1a2c);--card:light-dark(#fff,#12263d);--ink:light-dark(#0b2e4f,#e8f0f7);--mut:light-dark(#5b6f82,#9fb3c6);--line:light-dark(#d6e0ea,#25405c);--navy:#0b2e4f;--teal:#2a9d8f;--coral:#e76f51;--soft:light-dark(#e6f2f1,#173a43)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif;overflow-x:clip}
 header{background:var(--navy);color:#fff;padding:16px max(4vw,16px)}
 header h1{margin:0;font-size:clamp(24px,3.6vw,38px);line-height:1.05;font-weight:800}
@@ -101,30 +102,30 @@ const P=[
   vote:"the party that came first, but the others kept it out of government",
   r1:"Low education, low trust and clearly right-wing views: all three strong clues point up.",
   r2:"Excluded winner: his party won the most votes but was kept out of power. Feeling cheated may push belief up further (an open question; think of Austria 2024)."},
- {id:2,n:"Aylin",age:34,g:"woman",ed:"High school diploma",mig:"Yes, parents from Turkey",job:"Nurse",tr:1,int:1,lr:.65,
+ {id:2,n:"Aylin",age:34,g:"woman",ed:"High school diploma",mig:"Yes, parents from Turkey",job:"Nurse",tr:1,int:1,lr:.5,
   look:{skin:"#f1c9a5",hair:"#2b1d16",hs:"long",top:"#5fb3a8",kind:"scrubs"},
   vote:"a party that is now in opposition",
-  r1:"Low trust and centre-right views point up. Several studies also find more conspiracy belief among people with a migration background, though it varies by country and topic. Her medium education keeps her below Alex.",
+  r1:"Low trust points up, and so does a medium education. Several studies also find more belief among people with a migration background, though it varies by country and topic. Her centre views make her less clear-cut than Alex.",
   r2:"She lost, but she is not interested in politics. Mainly engaged losers become more conspiratorial, so little changes."},
- {id:3,n:"Alex",age:26,g:"man",ed:"Compulsory school",mig:"No",job:"Delivery driver",tr:1,int:1,lr:.65,
+ {id:3,n:"Alex",age:26,g:"man",ed:"Apprenticeship (IT)",mig:"No",job:"IT technician",tr:1,int:1,lr:.03,
   look:{skin:"#c68c66",hair:"#6b4a2b",hs:"cap",top:"#d1495b",kind:"hoodie"},
   vote:"a small party that failed to enter parliament",
-  r1:"Low education and low trust point up, and his views are centre-right. Only his less right-wing views keep him just below John.",
+  r1:"Low trust and extreme-left views point up: people at both political extremes tend to believe more. His medium education keeps him just below John.",
   r2:"He lost, but with low interest in politics the loss does not matter much to him."},
  {id:4,n:"Markus",age:42,g:"man",ed:"Apprenticeship (master craftsman)",mig:"No",job:"Owns a small company",tr:2,int:3,lr:.88,
   look:{skin:"#f3d2b8",hair:"#c49a5a",hs:"short",top:"#33415c",kind:"blazer"},
   vote:"a party that is now in government",
   r1:"Medium education and medium trust put him in the middle. His clearly right-wing views pull him above Maria.",
   r2:"His side is in government. Winners tend to become slightly less conspiratorial."},
- {id:5,n:"Lena",age:24,g:"woman",ed:"University student",mig:"No",job:"University student",tr:3,int:4,lr:.12,party:1,
+ {id:5,n:"Lena",age:24,g:"woman",ed:"University student",mig:"No",job:"University student",tr:3,int:4,lr:.25,party:1,
   look:{skin:"#f6d5c0",hair:"#b5542d",hs:"bun",top:"#8ab17d",kind:"sweater",glasses:1},
   vote:"a party that is now in opposition",
-  r1:"High trust, university education and left-wing views: all three strong clues point down.",
+  r1:"High trust, university education and moderate left-wing views: all three strong clues point down.",
   r2:"A loser who identifies strongly with her party and is very interested in politics: exactly the kind of loser whose conspiracy mentality rises after an election."},
- {id:6,n:"Maria",age:71,g:"woman",ed:"Apprenticeship",mig:"No",job:"Retired cleaner",tr:2,int:2,lr:.5,
+ {id:6,n:"Maria",age:71,g:"woman",ed:"Apprenticeship",mig:"No",job:"Retired cleaner",tr:2,int:2,lr:.63,
   look:{skin:"#e2a982",hair:"#e6e6e6",hs:"bob",top:"#b56576",kind:"cardigan",glasses:1},
   vote:"a party that is now in government",
-  r1:"Medium education, medium trust and centre views. Older age points slightly down. She sits in the lower middle.",
+  r1:"Medium education, medium trust and centre-right views. Older age points slightly down. She sits in the lower middle.",
   r2:"Her side won, so if anything she moves slightly down."},
  {id:7,n:"Ivan",age:47,g:"man",ed:"University degree",mig:"Yes, parents from Croatia",job:"Lawyer",tr:2,int:3,lr:.5,
   look:{skin:"#d9a07a",hair:"#3b2f2a",hs:"short",top:"#22313f",kind:"suit"},
@@ -222,32 +223,41 @@ function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt
 function groupView(){
   document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
   const G={step:1,slots:Array(7).fill(null),prev:null};
-  app.innerHTML=`<div class="row"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span></div>
+  app.innerHTML=`<div class="row" id="HT"><span class="hint">Drag a person onto a place, or click a person and then a place. On a phone: tap a person, then tap a place. Press × to take someone off the line.</span></div>
     <div class="stepbar" id="SB"></div><div id="B"></div>
-    <p class="note">Fictional characters. <a href="#teacher">Projector view (for the teacher)</a></p>`;
+    <p class="note">Fictional characters. Research rankings describe averages across many people, not predictions about individuals. <a href="#teacher">Projector view (for the teacher)</a></p>`;
   const bar=document.getElementById('SB');
   function render(){
     const full=G.slots.every(Boolean);
-    bar.innerHTML=G.step===1
-      ?`<b>Step 1 of 2</b><span class="hint">What you know: age, gender, job, education and migration background.</span>${full?'<button class="primary" id="nx">Step 2: show more information</button>':''}`
-      :`<b>Step 2 of 2</b><span class="hint">New: trust in politics and political views. Move people if you want; arrows show changes since step 1.</span>${full?'<span class="done" style="margin:0">Done! Be ready to compare your line with research.</span>':''}`;
+    if(G.step===1)bar.innerHTML=`<b>Step 1 of 2</b><span class="hint">What you know: age, gender, job, education and migration background.</span>${full?'<button class="primary" id="nx">Step 2: show more information</button>':''}`;
+    if(G.step===2)bar.innerHTML=`<b>Step 2 of 2</b><span class="hint">New: trust in politics and political views. Move people if you want; arrows show changes since step 1.</span>${full?'<button class="primary" id="fin">We are done: show what research says</button>':''}`;
     const nx=document.getElementById('nx');if(nx)nx.onclick=()=>{G.prev=[...G.slots];G.step=2;mountB()};
+    const fin=document.getElementById('fin');if(fin)fin.onclick=reveal;
   }
   function mountB(){mount(document.getElementById('B'),G.slots,{basic:G.step===1,prev:G.step===2?G.prev:null,onChange:render});render()}
+  function reveal(){
+    if(current){current.off();current=null}
+    const r=toSlots(R1);
+    document.getElementById('HT').hidden=true;
+    bar.innerHTML=`<b>What research suggests</b><span class="hint">Shaded: you placed this person at least two places away from the research. Do you agree with the reasons?</span><button id="back">Back to our line</button>`;
+    document.getElementById('B').innerHTML=`<div class="cmp">${head()}${cmpRow('Your group',G.slots,r)}${cmpRow('Research',r)}</div>${why(R1,'r1')}`;
+    document.getElementById('back').onclick=()=>{G.step=2;document.getElementById('HT').hidden=false;mountB()};
+  }
   mountB();
 }
 
 // ---------- teacher view ----------
 const T={tab:'demo',pl:null};
 const BANDS=[
- ['hi','Likely higher',[[3,'young, compulsory school'],[1,'compulsory school'],[2,'migration background, high school diploma']]],
- ['mid','Unclear',[[4,'apprenticeship, middle-aged man'],[6,'apprenticeship, but older']]],
+ ['hi','Likely higher',[[1,'compulsory school'],[2,'migration background, high school diploma']]],
+ ['mid','Unclear',[[3,'apprenticeship, young'],[4,'apprenticeship, middle-aged man'],[6,'apprenticeship, but older']]],
  ['lo','Likely lower',[[7,'university degree; migration background points the other way'],[5,'studies at university; young age points the other way']]]];
 const FINDS=[
  ['Education','The most consistent finding: lower education goes with more belief. It partly reflects feeling powerless and believing in simple solutions.'],
  ['Age','Most studies find more belief among younger people, some among older people. Young people often feel alienated from politics.'],
  ['Gender','Some studies find more belief among men, others among women, many no difference. It depends on the country and the theory.'],
  ['Migration background','Often more belief among minorities, linked to experiences of discrimination and marginalisation, and partly to theories about their own group.']];
+function cmpRow(label,slots,ref){return `<div class="lab">${label}</div>${slots.map((id,i)=>`<div class="cell${ref&&id&&Math.abs(ref.indexOf(id)-i)>=2?' off':''}">${id?avatar(byId[id],40)+'<span>'+byId[id].n+'</span>':'–'}</div>`).join('')}`}
 function line(slots){return `<div class="cmp">${head()}<div class="lab"></div>${slots.map(id=>`<div class="cell">${avatar(byId[id],56)}<span>${byId[id].n}</span></div>`).join('')}</div>`}
 const head=()=>`<div></div>${[1,2,3,4,5,6,7].map(i=>`<div class="hd">${i}${i===1?' · lowest':i===7?' · highest':''}</div>`).join('')}`;
 function why(order,key,prev){return `<div class="why">${order.map((id,i)=>{const p=byId[id];let mv='';
