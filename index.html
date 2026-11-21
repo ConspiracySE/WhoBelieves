@@ -109,14 +109,14 @@ const P=[
   r2:"Excluded winner: his party won the most votes but was kept out of power. Feeling cheated may push belief up further (an open question; think of Austria 2024)."},
  {id:2,n:"Aylin",age:34,g:"woman",ed:"High school diploma",mig:"Yes, parents from Turkey",job:"Nurse",tr:1,int:1,lr:.5,
   look:{skin:"#f1c9a5",hair:"#2b1d16",hs:"long",top:"#5fb3a8",kind:"scrubs"},
-  vote:"a party that is now in opposition",
+  vote:"did not vote",
   r1:"Low trust points up, and so does a medium education. Several studies also find more belief among people with a migration background, though it varies by country and topic. Her centre views make her less clear-cut than Alex.",
-  r2:"She lost, but she is not interested in politics. Mainly engaged losers become more conspiratorial, so little changes."},
- {id:3,n:"Alex",age:26,g:"man",ed:"Apprenticeship (IT)",mig:"No",job:"IT technician",tr:1,int:1,lr:.03,
+  r2:"She did not vote and is not interested in politics, so the election result hardly matters to her. She stays where she was."},
+ {id:3,n:"Alex",age:26,g:"man",ed:"Apprenticeship (IT)",mig:"No",job:"IT technician",tr:1,int:4,lr:.03,
   look:{skin:"#c68c66",hair:"#6b4a2b",hs:"cap",top:"#d1495b",kind:"hoodie"},
   vote:"a small party that failed to enter parliament",
   r1:"Low trust and extreme-left views point up: people at both political extremes tend to believe more. His medium education keeps him just below John.",
-  r2:"He lost, but with low interest in politics the loss does not matter much to him."},
+  r2:"He lost and follows politics very closely: an engaged loser, so his conspiracy mentality rises further. He stays just below John."},
  {id:4,n:"Markus",age:42,g:"man",ed:"Apprenticeship (master craftsman)",mig:"No",job:"Owns a small company",tr:2,int:3,lr:.88,
   look:{skin:"#f3d2b8",hair:"#c49a5a",hs:"short",top:"#33415c",kind:"blazer"},
   vote:"a party that is now in government",
@@ -172,7 +172,7 @@ function avatar(p,size){
 }
 const dots=v=>`<span class="dots">${'●'.repeat(v)}${'○'.repeat(4-v)}</span> ${LV[v]}`;
 const pos=v=>`<div class="pos"><i style="left:${v*100}%"></i></div><div class="ends"><span>left</span><span>right</span></div>`;
-const voteBox=(p,nw)=>`<div class="vote${nw?' newv':''}"><b>Voted for:</b> ${p.vote}<br><b>Interest in politics:</b> ${dots(p.int)}${p.party?', committed party supporter':''}</div>`;
+const voteBox=(p,nw)=>`<div class="vote${nw?' newv':''}">${p.vote==='did not vote'?'<b>Vote:</b> did not vote':'<b>Voted for:</b> '+p.vote}<br><b>Interest in politics:</b> ${dots(p.int)}${p.party?', committed party supporter':''}</div>`;
 
 // ---------- the board: seven places plus a pool ----------
 function board(el,slots,opt={}){
