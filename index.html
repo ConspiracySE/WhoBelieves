@@ -225,7 +225,7 @@ let current=null;
 function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt);return current}
 
 // ---------- group view ----------
-const UNLOCK='ILOVESCIENCE', UNLOCK3='ELECTION';
+const UNLOCK='POLITICS', UNLOCK3='ELECTION';
 function groupView(){
   document.getElementById('lede').textContent='Seven fictional people. As a group, place each of them on the line, from 1 (lowest conspiracy belief) to 7 (highest).';
   const G={step:1,slots:Array(7).fill(null),prev:null,tip:false,s3:null,prev3:null};
