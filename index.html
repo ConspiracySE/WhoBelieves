@@ -55,7 +55,7 @@ button:focus-visible,.tok:focus-visible,.pcard:focus-visible{outline:3px solid v
 .flash{background:var(--coral);color:#fff;border-radius:14px;padding:12px 16px;font-weight:800;font-size:20px;margin:4px 0 8px}
 .cmp{display:grid;grid-template-columns:110px repeat(7,minmax(0,1fr));gap:6px;align-items:center;margin:10px 0}
 .cmp .lab{font-weight:800}.cmp .cell{display:flex;flex-direction:column;align-items:center;font-size:13px;font-weight:700;border-radius:10px;padding:4px 0}
-.cmp .cell.off{background:light-dark(#fde8e2,#4a2a22)}
+.cmp .cell.off{background:light-dark(#fde8e2,#5c2a1f);box-shadow:inset 0 0 0 2px var(--coral)}
 .cmp .hd{text-align:center;font-weight:800;color:var(--mut);font-size:13px}
 .why{display:grid;gap:10px;margin-top:12px}
 .wcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;grid-template-columns:auto 56px minmax(0,1fr);gap:10px;align-items:start}
@@ -88,7 +88,7 @@ button.primary{background:var(--coral);border-color:var(--coral);color:#fff;font
  .slot{min-height:66px;flex-direction:row;justify-content:flex-start;padding-left:40px}
  .slot .num{top:50%;transform:translateY(-50%);left:12px}
  .tok{flex-direction:row;gap:8px}
- .cmp{grid-template-columns:70px repeat(7,minmax(0,1fr))}.cmp .cell span{display:none}
+ .cmp{grid-template-columns:70px repeat(7,minmax(0,1fr))}.cmp .hx{display:none}.cmp .cell span{display:none}
 }
 @media(prefers-reduced-motion:reduce){.ghost{transform:translate(-50%,-50%)}}
 </style>
@@ -272,7 +272,7 @@ function groupView(){
     const r=toSlots(round===1?R1:R2),mine=round===1?G.slots:G.s3;
     document.getElementById('HT').hidden=true;
     bar.className='stepbar';
-    bar.innerHTML=`<b>What research suggests${round===2?' after the election':''}</b><span class="hint">Shaded: you placed this person at least two places away from the research.</span>${round===1?'<button id="back">Back to our line</button>':''}`;
+    bar.innerHTML=`<b>What research suggests${round===2?' after the election':''}</b><span class="hint">Red frame: you placed this person at least two places away from the research.</span>${round===1?'<button id="back">Back to our line</button>':''}`;
     document.getElementById('B').innerHTML=`<div class="cmp">${head()}${cmpRow('Your group',mine,r)}${cmpRow('Research',r)}</div>${round===1?why(R1,'r1'):why(R2,'r2',R1)}`;
     if(round===1)document.getElementById('back').onclick=()=>{act.hidden=true;mountB()};
     if(round===1)lock(3,UNLOCK3,()=>{G.s3=toSlots(R1);G.prev3=toSlots(R1);G.step=3;mountB()});
@@ -284,7 +284,7 @@ function groupView(){
 
 function cmpRow(label,slots,ref){return `<div class="lab">${label}</div>${slots.map((id,i)=>`<div class="cell${ref&&id&&Math.abs(ref.indexOf(id)-i)>=2?' off':''}">${id?avatar(byId[id],40)+'<span>'+byId[id].n+'</span>':'–'}</div>`).join('')}`}
 function line(slots){return `<div class="cmp">${head()}<div class="lab"></div>${slots.map(id=>`<div class="cell">${avatar(byId[id],56)}<span>${byId[id].n}</span></div>`).join('')}</div>`}
-const head=()=>`<div></div>${[1,2,3,4,5,6,7].map(i=>`<div class="hd">${i}${i===1?' · lowest':i===7?' · highest':''}</div>`).join('')}`;
+const head=()=>`<div></div>${[1,2,3,4,5,6,7].map(i=>`<div class="hd">${i}<span class="hx">${i===1?' · lowest':i===7?' · highest':''}</span></div>`).join('')}`;
 function why(order,key,prev){return `<div class="why">${order.map((id,i)=>[id,i]).reverse().map(([id,i])=>{const p=byId[id];let mv='';
   if(prev){const d=prev.indexOf(id)-i;mv=`<span class="mv ${d>0?'up':d<0?'down':''}">${d>0?'▲ up':d<0?'▼ down':'='}</span>`}
   return `<div class="wcard"><div class="rk">${7-i}</div>${avatar(p,56)}<div><h3>${p.n}${mv}</h3>${key==='r2'?voteBox(p):''}<p>${p[key]}</p></div></div>`}).join('')}</div>`}
