@@ -177,7 +177,7 @@ const voteBox=(p,nw)=>`<div class="vote${nw?' newv':''}">${p.vote==='did not vot
 // ---------- the board: seven places plus a pool ----------
 function board(el,slots,opt={}){
   let sel=null;
-  const where=id=>slots.indexOf(id);
+  const where=id=>slots.indexOf(id);const openSet=new Set();
   function place(id,i){const from=where(id),occ=slots[i];
     if(from>=0)slots[from]=occ;   // swap if both were placed; an occupant pushed out of the pool spot goes back to the pool
     slots[i]=id;sel=null;draw()}
@@ -186,7 +186,7 @@ function board(el,slots,opt={}){
     el.innerHTML=`<div class="track"><span class="end lo">Lowest belief</span><span class="end hi">Highest belief</span>
       ${slots.map((id,i)=>`<div class="slot${id?' full':''}" data-slot="${i}" style="--i:${i}"><span class="num">${i+1}</span>${id?`<div class="tok${sel===id?' sel':''}" data-id="${id}" tabindex="0">${avatar(byId[id],opt.big?64:52)}<span>${byId[id].n}${opt.prev&&opt.prev.indexOf(id)>=0&&opt.prev.indexOf(id)!==i?` <b class="mv ${opt.prev.indexOf(id)<i?'up':'down'}">${opt.prev.indexOf(id)<i?'▲':'▼'}${Math.abs(opt.prev.indexOf(id)-i)}</b>`:''}</span><button class="x" data-out="${id}" aria-label="Back to the pool">×</button></div>`:''}</div>`).join('')}</div>
       <div class="pool" data-pool="1"><h2>${opt.poolTitle||'The seven people'}</h2>${P.map(p=>{const w=where(p.id);return `
-       <div class="pcard${w>=0&&opt.basic?' placed':''}${opt.fresh?' fresh':''}${sel===p.id?' sel':''}${opt.open?' open':''}" data-id="${p.id}" tabindex="0">
+       <div class="pcard${w>=0&&opt.basic?' placed':''}${opt.fresh?' fresh':''}${sel===p.id?' sel':''}${opt.open||openSet.has(p.id)?' open':''}" data-id="${p.id}" tabindex="0">
         ${avatar(p,56)}<div><h3>${p.n}, ${p.age}</h3><div class="sub">${p.g} · ${p.job}</div></div>
         <div style="display:flex;flex-direction:column;align-items:end;gap:4px">${w>=0?`<span class="badge">place ${w+1}</span>`:''}<button class="info" data-info="${p.id}">Profile</button></div>
         <div class="details"><div><div class="k">Education</div>${p.ed}</div><div><div class="k">Migration background</div>${p.mig}</div>
@@ -195,17 +195,17 @@ function board(el,slots,opt={}){
     opt.onChange&&opt.onChange();
   }
   let justDragged=false;
-  el.addEventListener('click',e=>{
+  el.onclick=(e=>{
     if(justDragged){justDragged=false;return}
     const out=e.target.closest('[data-out]');if(out){unplace(+out.dataset.out);return}
-    const inf=e.target.closest('[data-info]');if(inf){inf.closest('.pcard').classList.toggle('open');return}
+    const inf=e.target.closest('[data-info]');if(inf){const id=+inf.dataset.info;openSet.has(id)?openSet.delete(id):openSet.add(id);inf.closest('.pcard').classList.toggle('open');return}
     const item=e.target.closest('.tok,.pcard'),slot=e.target.closest('[data-slot]');
     if(slot&&sel&&(!item||+item.dataset.id!==sel)){place(sel,+slot.dataset.slot);return}
     if(item){const id=+item.dataset.id;sel=sel===id?null:id;draw()}
   });
-  el.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.tok,.pcard,.slot')){e.preventDefault();e.target.click()}});
+  el.onkeydown=(e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.tok,.pcard,.slot')){e.preventDefault();e.target.click()}});
   let d=null;
-  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;const item=e.target.closest('.tok,.pcard');if(!item||e.target.closest('button'))return;
+  el.onpointerdown=(e=>{if(e.pointerType==='touch')return;const item=e.target.closest('.tok,.pcard');if(!item||e.target.closest('button'))return;
     d={id:+item.dataset.id,x:e.clientX,y:e.clientY,ghost:null}});
   const move=e=>{if(!d)return;
     if(!d.ghost){if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<8)return;
@@ -217,9 +217,9 @@ function board(el,slots,opt={}){
     dd.ghost.remove();justDragged=true;setTimeout(()=>{justDragged=false},50);
     const t=document.elementFromPoint(e.clientX,e.clientY);const s=t&&t.closest('[data-slot]'),pool=t&&t.closest('[data-pool]');
     if(s&&el.contains(s))place(dd.id,+s.dataset.slot);else if(pool&&el.contains(pool))unplace(dd.id);else draw()};
-  window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',()=>{if(d&&d.ghost)d.ghost.remove();d=null;draw()});
+  window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);const cancel=()=>{if(!d)return;const had=d.ghost;if(had)had.remove();d=null;if(had)draw()};window.addEventListener('pointercancel',cancel);
   draw();
-  return {reset(){slots.fill(null);sel=null;draw()},off(){window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}};
+  return {reset(){slots.fill(null);sel=null;draw()},off(){el.onclick=el.onkeydown=el.onpointerdown=null;window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel)}};
 }
 let current=null;
 function mount(el,slots,opt){if(current)current.off();current=board(el,slots,opt);return current}
